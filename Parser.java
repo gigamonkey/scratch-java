@@ -48,7 +48,7 @@ public class Parser {
   private Map<String, DoubleFunction<Double>> functions = Map.of(
     "sqrt", (x) -> Math.sqrt(x),
     "ln", (x) -> Math.log(x)
-  );
+                                                                 );
 
   // Implementation for ! operator.
   private double factorial(double n) {
@@ -64,11 +64,29 @@ public class Parser {
 
   public interface Expression {
     public double evaluateAt(double x);
+
+    public String toSexp();
+
+    default String sexp(String name, Expression arg) {
+      return "(" + name + " " + arg.toSexp() + ")";
+    }
+
+    default String sexp(String name, Expression a, Expression b) {
+      return "(" + name + " " + a.toSexp() + " " + b.toSexp() + ")";
+    }
   }
 
   public record Number(double value) implements Expression {
     public double evaluateAt(double x) {
       return value;
+    }
+
+    public String toSexp() {
+      if (value % 1 == 0) {
+        return String.valueOf((long)value);
+      } else {
+        return String.valueOf(value);
+      }
     }
   }
 
@@ -89,11 +107,19 @@ public class Parser {
         throw new RuntimeException("No binding for " + name);
       }
     }
+
+    public String toSexp() {
+      return name;
+    }
   }
 
   public record UnaryFunction(String name, DoubleFunction<Double> fn, Expression arg) implements Expression {
     public double evaluateAt(double x) {
       return fn.apply(arg.evaluateAt(x));
+    }
+
+    public String toSexp() {
+      return sexp(name, arg);
     }
   }
 
@@ -101,30 +127,57 @@ public class Parser {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) + right.evaluateAt(x);
     }
+
+    public String toSexp() {
+      return sexp("+", left, right);
+    }
+
   }
+
   public record Subtraction(Expression left, Expression right) implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) - right.evaluateAt(x);
+    }
+
+    public String toSexp() {
+      return sexp("-", left, right);
     }
   }
   public record Multiplication(Expression left, Expression right) implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) * right.evaluateAt(x);
     }
+
+    public String toSexp() {
+      return sexp("*", left, right);
+    }
   }
   public record Division(Expression left, Expression right) implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) / right.evaluateAt(x);
     }
+
+    public String toSexp() {
+      return sexp("/", left, right);
+    }
+
   }
   public record Remainder(Expression left, Expression right) implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) % right.evaluateAt(x);
     }
+
+    public String toSexp() {
+      return sexp("%", left, right);
+    }
   }
   public record Exponentiation(Expression left, Expression right) implements Expression {
     public double evaluateAt(double x) {
       return Math.pow(left.evaluateAt(x), right.evaluateAt(x));
+    }
+
+    public String toSexp() {
+      return sexp("^", left, right);
     }
   }
 
@@ -350,4 +403,6 @@ public class Parser {
     }
     return pos;
   }
+
+
 }

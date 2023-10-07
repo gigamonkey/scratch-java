@@ -14,7 +14,7 @@ public class TestParser {
       Optional<Parser.Expression> opt = p.parse(line);
       if (opt.isPresent()) {
         var expr = opt.get();
-        System.out.printf("%20s -> %s; at x=100: %f\n", line, expr, expr.evaluateAt(100));
+        System.out.printf("%20s -> %s\n", line, expr.toSexp());
       } else {
         System.out.printf("Can't parse '%s'\n", line);
       }
