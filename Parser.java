@@ -197,19 +197,14 @@ public class Parser {
   private PartialParse additive(String s, int pos) {
     var left = term(s, pos);
     if (left != null) {
-      var addition = true;
-
-      var op = match(s, left.position(), "+");
-      if (op == null) {
-        addition = false;
-        op = match(s, left.position(), "-");
-      }
+      var op = match(s, left.position(), "+", "-");
       if (op != null) {
         var right = expression(s, op.position());
         if (right != null) {
-          if (addition) {
+          switch (op.text()) {
+          case "+":
             return ok(new Addition(left.expression(), right.expression()), right.position());
-          } else {
+          case "-":
             return ok(new Subtraction(left.expression(), right.expression()), right.position());
           }
         }
@@ -221,18 +216,14 @@ public class Parser {
   private PartialParse multiplicative(String s, int pos) {
     var left = factor(s, pos);
     if (left != null) {
-      var multiplication = true;
-      var op = match(s, left.position(), "*");
-      if (op == null) {
-        multiplication = false;
-        op = match(s, left.position(), "/");
-      }
+      var op = match(s, left.position(), "*", "/");
       if (op != null) {
         var right = term(s, op.position());
         if (right != null) {
-          if (multiplication) {
+          switch (op.text()) {
+          case "*":
             return ok(new Multiplication(left.expression(), right.expression()), right.position());
-          } else {
+          case "/":
             return ok(new Division(left.expression(), right.expression()), right.position());
           }
         }
