@@ -86,6 +86,7 @@ public class Parser {
   // Parsing
 
   private record PartialParse(Expression expression, int position) {}
+  private record Op(String text, int position) {}
 
 
   public Optional<Expression> parse(String s) {
@@ -254,12 +255,13 @@ public class Parser {
     return fail();
   }
 
-  private PartialParse match(String what, String s, int pos) {
-    int newPos = ws(s, pos);
+  private Op match(String what, String s, int pos) {
+    var newPos = ws(s, pos);
     if (s.indexOf(what, newPos) == newPos) {
-      return ok(null, ws(s, newPos + what.length()));
+      var end = newPos + what.length();
+      return new Op(s.substring(newPos, end), ws(s, end));
     }
-    return fail();
+    return null;
   }
 
   // Eat whitespace and return the new position. Used in match to allow
