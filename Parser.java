@@ -34,6 +34,14 @@ public class Parser {
     "ln", (x) -> Math.log(x)
   );
 
+  // Implementation for ! operator.
+  private double factorial(double n) {
+    if (n < 1) {
+      return 1;
+    } else {
+      return n * factorial(n - 1);
+    }
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // Expressions
@@ -152,15 +160,28 @@ public class Parser {
     var pp = exponentiation(s, pos);
     if (pp != null) return pp;
 
-    pp = atomic(s, pos);
+    pp = factorialOrAtomic(s, pos);
     if (pp != null) return pp;
 
     return fail();
   }
 
+  public PartialParse factorialOrAtomic(String s, int pos) {
+    var pp = atomic(s, pos);
+    if (pp != null) {
+      var bang = match(s, pp.position(), "!");
+      if (bang != null) {
+        return ok(new UnaryFunction("!", this::factorial, pp.expression()), bang.position());
+      } else {
+        return pp;
+      }
+    }
+    return null;
+  }
+
   public PartialParse atomic(String s, int pos) {
-    // Have to match function call before variable since they start the same.
-    // Could combine them into one matching function
+    // Have to match function call before variable since they start the same
+    // way. Could combine them into one matching function
     var pp = functionCall(s, pos);
     if (pp != null) return pp;
 
@@ -207,7 +228,7 @@ public class Parser {
       pos++;
     }
     if (pos > start) {
-      if (s.charAt(pos) == '.') {
+      if (lookingAt(s, pos, ".")) {
         pos++;
         while (pos < s.length() && Character.isDigit(s.codePointAt(pos))) {
           pos++;
@@ -269,7 +290,7 @@ public class Parser {
   }
 
   private PartialParse exponentiation(String s, int pos) {
-    var base = atomic(s, pos);
+    var base = factorialOrAtomic(s, pos);
     if (base != null) {
       var op = match(s, base.position(), "^");
       if (op != null) {
@@ -285,13 +306,18 @@ public class Parser {
   private Token match(String s, int pos, String... whats) {
     var newPos = ws(s, pos);
     for (var what: whats) {
-      if (s.indexOf(what, newPos) == newPos) {
+      if (lookingAt(s, pos, what)) {
         var end = newPos + what.length();
         return new Token(s.substring(newPos, end), ws(s, end));
       }
     }
     return null;
   }
+
+  private boolean lookingAt(String s, int pos, String what) {
+    return pos < s.length() && s.indexOf(what, pos) == pos;
+  }
+
 
   private Token name(String s, int pos) {
     int start = ws(s, pos);
