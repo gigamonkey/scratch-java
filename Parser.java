@@ -3,6 +3,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.DoubleFunction;
 
+/**
+ * A parser and evaluator for arithmetic expressions. Uses a hand-written
+ * recursive descent parser and can parse +, -, *, /, %, and ^ with proper
+ * precedence plus ()s, a few mathematical constants, a variable x, and a
+ * handful of function calls. Oh and a factorial operator, !.
+ *
+ * In addition to demonstrating this parsing technique, this code also uses
+ * records which are another kind of syntatic sugar for making classes with
+ * immutable values.
+ *
+ * The main method provides a simple REPL where you can type a formula and it
+ * will print out the tree (using the fact that record classes have a pretty
+ * useful toString method) and also evaluates the formula at x=100. Obviously to
+ * actually use this code in some more interesting context you wouldn't use this
+ * main method but it's reasonable for interactive testing.
+ */
 public class Parser {
 
   public static void main(String[] argv) {
@@ -132,10 +148,6 @@ public class Parser {
     return new PartialParse(expr, pos);
   }
 
-  private PartialParse fail() {
-    return null;
-  }
-
   private PartialParse expression(String s, int pos) {
     var pp = additive(s, pos);
     if (pp != null) return pp;
@@ -143,7 +155,7 @@ public class Parser {
     pp = term(s, pos);
     if (pp != null) return pp;
 
-    return fail();
+    return null;
   }
 
   public PartialParse term(String s, int pos) {
@@ -153,7 +165,7 @@ public class Parser {
     pp = factor(s, pos);
     if (pp != null) return pp;
 
-    return fail();
+    return null;
   }
 
   public PartialParse factor(String s, int pos) {
@@ -163,7 +175,7 @@ public class Parser {
     pp = factorialOrAtomic(s, pos);
     if (pp != null) return pp;
 
-    return fail();
+    return null;
   }
 
   public PartialParse factorialOrAtomic(String s, int pos) {
@@ -194,7 +206,7 @@ public class Parser {
     pp = parenthesized(s, pos);
     if (pp != null) return pp;
 
-    return fail();
+    return null;
   }
 
   public PartialParse functionCall(String s, int pos) {
@@ -205,7 +217,7 @@ public class Parser {
         return ok(new UnaryFunction(n.text(), functions.get(n.text()), arg.expression()), arg.position());
       }
     }
-    return fail();
+    return null;
   }
 
   public PartialParse parenthesized(String s, int pos) {
@@ -219,7 +231,7 @@ public class Parser {
         }
       }
     }
-    return fail();
+    return null;
   }
 
   private PartialParse number(String s, int pos) {
@@ -236,7 +248,7 @@ public class Parser {
       }
       return ok(new Number(Double.valueOf(s.substring(start, pos))), pos);
     } else {
-      return fail();
+      return null;
     }
   }
 
@@ -245,7 +257,7 @@ public class Parser {
     if (n != null) {
       return ok(new Variable(n.text()), n.position());
     } else {
-      return fail();
+      return null;
     }
   }
 
@@ -265,7 +277,7 @@ public class Parser {
         }
       }
     }
-    return fail();
+    return null;
   }
 
   private PartialParse multiplicative(String s, int pos) {
@@ -286,7 +298,7 @@ public class Parser {
         }
       }
     }
-    return fail();
+    return null;
   }
 
   private PartialParse exponentiation(String s, int pos) {
@@ -300,7 +312,7 @@ public class Parser {
         }
       }
     }
-    return fail();
+    return null;
   }
 
   private Token match(String s, int pos, String... whats) {
