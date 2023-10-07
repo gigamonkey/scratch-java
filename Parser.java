@@ -253,11 +253,11 @@ public class Parser {
   private PartialParse exponentiation(String s, int pos) {
     var base = atomic(s, pos);
     if (base != null) {
-      var op = match("^", s, left.position());
+      var op = match("^", s, base.position());
       if (op != null) {
         var exp = atomic(s, op.position());
-        if (right != null) {
-          return ok(new Division(left.expression(), right.expression()), right.position());
+        if (exp != null) {
+          return ok(new Exponentiation(base.expression(), exp.expression()), exp.position());
         }
       }
     }
