@@ -1,7 +1,7 @@
-import java.util.Optional;
 import java.io.Console;
-import java.util.function.DoubleFunction;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.DoubleFunction;
 
 public class Parser {
 
@@ -108,7 +108,7 @@ public class Parser {
   // Parsing
 
   private record PartialParse(Expression expression, int position) {}
-  private record Op(String text, int position) {}
+  private record Token(String text, int position) {}
 
 
   public Optional<Expression> parse(String s) {
@@ -159,6 +159,8 @@ public class Parser {
   }
 
   public PartialParse atomic(String s, int pos) {
+    // Have to match function call before variable since they start the same.
+    // Could combine them into one matching function
     var pp = functionCall(s, pos);
     if (pp != null) return pp;
 
@@ -175,15 +177,11 @@ public class Parser {
   }
 
   public PartialParse functionCall(String s, int pos) {
-    int start = ws(s, pos);
-    while (pos < s.length() && Character.isLetter(s.codePointAt(pos))){
-      pos += Character.charCount(s.codePointAt(pos));
-    }
-    if (pos > start) {
-      String name = s.substring(start, pos);
-      var arg = parenthesized(s, pos);
+    var n = name(s, pos);
+    if (n != null) {
+      var arg = parenthesized(s, n.position());
       if (arg != null) {
-        return ok(new UnaryFunction(name, functions.get(name), arg.expression()), arg.position());
+        return ok(new UnaryFunction(n.text(), functions.get(n.text()), arg.expression()), arg.position());
       }
     }
     return fail();
@@ -209,9 +207,8 @@ public class Parser {
       pos++;
     }
     if (pos > start) {
-      var pp = match(s, pos, ".");
-      if (pp != null) {
-        pos = pp.position();
+      if (s.charAt(pos) == '.') {
+        pos++;
         while (pos < s.length() && Character.isDigit(s.codePointAt(pos))) {
           pos++;
         }
@@ -223,12 +220,9 @@ public class Parser {
   }
 
   private PartialParse variable(String s, int pos) {
-    int start = pos;
-    while (pos < s.length() && Character.isLetter(s.codePointAt(pos))){
-      pos += Character.charCount(s.codePointAt(pos));
-    }
-    if (pos > start) {
-      return ok(new Variable(s.substring(start, pos)), pos);
+    var n = name(s, pos);
+    if (n != null) {
+      return ok(new Variable(n.text()), n.position());
     } else {
       return fail();
     }
@@ -288,13 +282,24 @@ public class Parser {
     return fail();
   }
 
-  private Op match(String s, int pos, String... whats) {
+  private Token match(String s, int pos, String... whats) {
     var newPos = ws(s, pos);
     for (var what: whats) {
       if (s.indexOf(what, newPos) == newPos) {
         var end = newPos + what.length();
-        return new Op(s.substring(newPos, end), ws(s, end));
+        return new Token(s.substring(newPos, end), ws(s, end));
       }
+    }
+    return null;
+  }
+
+  private Token name(String s, int pos) {
+    int start = ws(s, pos);
+    while (pos < s.length() && Character.isLetter(s.codePointAt(pos))){
+      pos += Character.charCount(s.codePointAt(pos));
+    }
+    if (pos > start) {
+      return new Token(s.substring(start, pos), ws(s, pos));
     }
     return null;
   }
