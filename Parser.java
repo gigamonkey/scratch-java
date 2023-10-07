@@ -150,11 +150,11 @@ public class Parser {
   }
 
   public PartialParse parenthesized(String s, int pos) {
-    var lparen = match("(", s, pos);
+    var lparen = match(s, pos, "(");
     if (lparen != null) {
       var expr = expression(s, lparen.position());
       if (expr != null) {
-        var rparen = match(")", s, expr.position());
+        var rparen = match(s, expr.position(), ")");
         if (rparen != null) {
           return ok(expr.expression(), rparen.position());
         }
@@ -169,7 +169,7 @@ public class Parser {
       pos++;
     }
     if (pos > start) {
-      var pp = match(".", s, pos);
+      var pp = match(s, pos, ".");
       if (pp != null) {
         pos = pp.position();
         while (pos < s.length() && Character.isDigit(s.codePointAt(pos))) {
@@ -199,10 +199,10 @@ public class Parser {
     if (left != null) {
       var addition = true;
 
-      var op = match("+", s, left.position());
+      var op = match(s, left.position(), "+");
       if (op == null) {
         addition = false;
-        op = match("-", s, left.position());
+        op = match(s, left.position(), "-");
       }
       if (op != null) {
         var right = expression(s, op.position());
@@ -222,10 +222,10 @@ public class Parser {
     var left = factor(s, pos);
     if (left != null) {
       var multiplication = true;
-      var op = match("*", s, left.position());
+      var op = match(s, left.position(), "*");
       if (op == null) {
         multiplication = false;
-        op = match("/", s, left.position());
+        op = match(s, left.position(), "/");
       }
       if (op != null) {
         var right = term(s, op.position());
@@ -244,7 +244,7 @@ public class Parser {
   private PartialParse exponentiation(String s, int pos) {
     var base = atomic(s, pos);
     if (base != null) {
-      var op = match("^", s, base.position());
+      var op = match(s, base.position(), "^");
       if (op != null) {
         var exp = factor(s, op.position());
         if (exp != null) {
@@ -255,11 +255,13 @@ public class Parser {
     return fail();
   }
 
-  private Op match(String what, String s, int pos) {
+  private Op match(String s, int pos, String... whats) {
     var newPos = ws(s, pos);
-    if (s.indexOf(what, newPos) == newPos) {
-      var end = newPos + what.length();
-      return new Op(s.substring(newPos, end), ws(s, end));
+    for (var what: whats) {
+      if (s.indexOf(what, newPos) == newPos) {
+        var end = newPos + what.length();
+        return new Op(s.substring(newPos, end), ws(s, end));
+      }
     }
     return null;
   }
