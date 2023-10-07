@@ -1,5 +1,7 @@
 import java.util.Optional;
 import java.io.Console;
+import java.util.function.DoubleFunction;
+import java.util.Map;
 
 public class Parser {
 
@@ -23,6 +25,15 @@ public class Parser {
       }
     }
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Functions - define named functions by adding them to this map.
+
+  private Map<String, DoubleFunction<Double>> functions = Map.of(
+    "sqrt", (x) -> Math.sqrt(x),
+    "ln", (x) -> Math.log(x)
+  );
+
 
   //////////////////////////////////////////////////////////////////////////////
   // Expressions
@@ -53,6 +64,12 @@ public class Parser {
       default:
         throw new RuntimeException("No binding for " + name);
       }
+    }
+  }
+
+  public record UnaryFunction(String name, DoubleFunction<Double> fn, Expression arg) implements Expression {
+    public double evaluateAt(double x) {
+      return fn.apply(arg.evaluateAt(x));
     }
   }
 
@@ -142,7 +159,10 @@ public class Parser {
   }
 
   public PartialParse atomic(String s, int pos) {
-    var pp = number(s, pos);
+    var pp = functionCall(s, pos);
+    if (pp != null) return pp;
+
+    pp = number(s, pos);
     if (pp != null) return pp;
 
     pp = variable(s, pos);
@@ -151,6 +171,21 @@ public class Parser {
     pp = parenthesized(s, pos);
     if (pp != null) return pp;
 
+    return fail();
+  }
+
+  public PartialParse functionCall(String s, int pos) {
+    int start = ws(s, pos);
+    while (pos < s.length() && Character.isLetter(s.codePointAt(pos))){
+      pos += Character.charCount(s.codePointAt(pos));
+    }
+    if (pos > start) {
+      String name = s.substring(start, pos);
+      var arg = parenthesized(s, pos);
+      if (arg != null) {
+        return ok(new UnaryFunction(name, functions.get(name), arg.expression()), arg.position());
+      }
+    }
     return fail();
   }
 
