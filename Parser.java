@@ -9,12 +9,17 @@ public class Parser {
 
     while (true) {
       String formula = c.readLine("> ");
-      Optional<Expression> opt = p.parse(formula);
-      if (opt.isPresent()) {
-        System.out.println(opt.get());
-        System.out.printf("At 100: %f\n", opt.get().evaluateAt(100));
+      if (formula == null) {
+        System.out.println("\nBye.");
+        break;
       } else {
-        System.out.printf("Can't parse '%s'\n", formula);
+        Optional<Expression> opt = p.parse(formula);
+        if (opt.isPresent()) {
+          System.out.println(opt.get());
+          System.out.printf("At 100: %f\n", opt.get().evaluateAt(100));
+        } else {
+          System.out.printf("Can't parse '%s'\n", formula);
+        }
       }
     }
   }
@@ -199,7 +204,7 @@ public class Parser {
     if (left != null) {
       var op = match("+", s, left.position());
       if (op != null) {
-        var right = term(s, op.position());
+        var right = expression(s, op.position());
         if (right != null) {
           return ok(new Addition(left.expression(), right.expression()), right.position());
         }
@@ -213,7 +218,7 @@ public class Parser {
     if (left != null) {
       var op = match("-", s, left.position());
       if (op != null) {
-        var right = term(s, op.position());
+        var right = expression(s, op.position());
         if (right != null) {
           return ok(new Subtraction(left.expression(), right.expression()), right.position());
         }
@@ -227,7 +232,7 @@ public class Parser {
     if (left != null) {
       var op = match("*", s, left.position());
       if (op != null) {
-        var right = factor(s, op.position());
+        var right = term(s, op.position());
         if (right != null) {
           return ok(new Multiplication(left.expression(), right.expression()), right.position());
         }
@@ -241,7 +246,7 @@ public class Parser {
     if (left != null) {
       var op = match("/", s, left.position());
       if (op != null) {
-        var right = factor(s, op.position());
+        var right = term(s, op.position());
         if (right != null) {
           return ok(new Division(left.expression(), right.expression()), right.position());
         }
@@ -255,7 +260,7 @@ public class Parser {
     if (base != null) {
       var op = match("^", s, base.position());
       if (op != null) {
-        var exp = atomic(s, op.position());
+        var exp = factor(s, op.position());
         if (exp != null) {
           return ok(new Exponentiation(base.expression(), exp.expression()), exp.position());
         }
@@ -263,8 +268,6 @@ public class Parser {
     }
     return fail();
   }
-
-
 
   private PartialParse match(String what, String s, int pos) {
     int newPos = ws(s, pos);
@@ -274,13 +277,13 @@ public class Parser {
     return fail();
   }
 
+  // Eat whitespace and return the new position. Used in match to allow
+  // whitespace around punctuation.
   private int ws(String s, int pos) {
     while (pos < s.length() && Character.isWhitespace(s.codePointAt(pos))){
       pos += Character.charCount(s.codePointAt(pos));
     }
     return pos;
   }
-
-
 
 }
