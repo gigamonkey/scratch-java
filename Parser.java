@@ -318,7 +318,7 @@ public class Parser {
   private Token match(String s, int pos, String... whats) {
     var newPos = ws(s, pos);
     for (var what: whats) {
-      if (lookingAt(s, pos, what)) {
+      if (lookingAt(s, newPos, what)) {
         var end = newPos + what.length();
         return new Token(s.substring(newPos, end), ws(s, end));
       }
