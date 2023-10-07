@@ -76,6 +76,11 @@ public class Parser {
       return left.evaluateAt(x) / right.evaluateAt(x);
     }
   }
+  public record Remainder(Expression left, Expression right) implements Expression {
+    public double evaluateAt(double x) {
+      return left.evaluateAt(x) % right.evaluateAt(x);
+    }
+  }
   public record Exponentiation(Expression left, Expression right) implements Expression {
     public double evaluateAt(double x) {
       return Math.pow(left.evaluateAt(x), right.evaluateAt(x));
@@ -216,7 +221,7 @@ public class Parser {
   private PartialParse multiplicative(String s, int pos) {
     var left = factor(s, pos);
     if (left != null) {
-      var op = match(s, left.position(), "*", "/");
+      var op = match(s, left.position(), "*", "/", "%");
       if (op != null) {
         var right = term(s, op.position());
         if (right != null) {
@@ -225,6 +230,8 @@ public class Parser {
             return ok(new Multiplication(left.expression(), right.expression()), right.position());
           case "/":
             return ok(new Division(left.expression(), right.expression()), right.position());
+          case "%":
+            return ok(new Remainder(left.expression(), right.expression()), right.position());
           }
         }
       }
@@ -265,5 +272,4 @@ public class Parser {
     }
     return pos;
   }
-
 }
