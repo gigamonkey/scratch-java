@@ -106,10 +106,7 @@ public class Parser {
   }
 
   private PartialParse expression(String s, int pos) {
-    var pp = addition(s, pos);
-    if (pp != null) return pp;
-
-    pp = subtraction(s, pos);
+    var pp = additive(s, pos);
     if (pp != null) return pp;
 
     pp = term(s, pos);
@@ -119,10 +116,7 @@ public class Parser {
   }
 
   public PartialParse term(String s, int pos) {
-    var pp = multiplication(s, pos);
-    if (pp != null) return pp;
-
-    pp = division(s, pos);
+    var pp = multiplicative(s, pos);
     if (pp != null) return pp;
 
     pp = factor(s, pos);
@@ -199,56 +193,47 @@ public class Parser {
     }
   }
 
-  private PartialParse addition(String s, int pos) {
+  private PartialParse additive(String s, int pos) {
     var left = term(s, pos);
     if (left != null) {
+      var addition = true;
+
       var op = match("+", s, left.position());
+      if (op == null) {
+        addition = false;
+        op = match("-", s, left.position());
+      }
       if (op != null) {
         var right = expression(s, op.position());
         if (right != null) {
-          return ok(new Addition(left.expression(), right.expression()), right.position());
+          if (addition) {
+            return ok(new Addition(left.expression(), right.expression()), right.position());
+          } else {
+            return ok(new Subtraction(left.expression(), right.expression()), right.position());
+          }
         }
       }
     }
     return fail();
   }
 
-  private PartialParse subtraction(String s, int pos) {
-    var left = term(s, pos);
-    if (left != null) {
-      var op = match("-", s, left.position());
-      if (op != null) {
-        var right = expression(s, op.position());
-        if (right != null) {
-          return ok(new Subtraction(left.expression(), right.expression()), right.position());
-        }
-      }
-    }
-    return fail();
-  }
-
-  private PartialParse multiplication(String s, int pos) {
+  private PartialParse multiplicative(String s, int pos) {
     var left = factor(s, pos);
     if (left != null) {
+      var multiplication = true;
       var op = match("*", s, left.position());
-      if (op != null) {
-        var right = term(s, op.position());
-        if (right != null) {
-          return ok(new Multiplication(left.expression(), right.expression()), right.position());
-        }
+      if (op == null) {
+        multiplication = false;
+        op = match("/", s, left.position());
       }
-    }
-    return fail();
-  }
-
-  private PartialParse division(String s, int pos) {
-    var left = factor(s, pos);
-    if (left != null) {
-      var op = match("/", s, left.position());
       if (op != null) {
         var right = term(s, op.position());
         if (right != null) {
-          return ok(new Division(left.expression(), right.expression()), right.position());
+          if (multiplication) {
+            return ok(new Multiplication(left.expression(), right.expression()), right.position());
+          } else {
+            return ok(new Division(left.expression(), right.expression()), right.position());
+          }
         }
       }
     }
