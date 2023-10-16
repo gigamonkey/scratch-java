@@ -46,9 +46,11 @@ public class Parser {
   // Functions - define named functions by adding them to this map.
 
   private Map<String, DoubleFunction<Double>> functions = Map.of(
-    "sqrt", (x) -> Math.sqrt(x),
-    "ln", (x) -> Math.log(x)
-                                                                 );
+    "sqrt",
+    x -> Math.sqrt(x),
+    "ln",
+    x -> Math.log(x)
+  );
 
   // Implementation for ! operator.
   private double factorial(double n) {
@@ -62,7 +64,7 @@ public class Parser {
   //////////////////////////////////////////////////////////////////////////////
   // Expressions
 
-  public interface Expression {
+  public static interface Expression {
     public double evaluateAt(double x);
 
     public String toSexp();
@@ -76,35 +78,35 @@ public class Parser {
     }
   }
 
-  public record Number(double value) implements Expression {
+  public static record Number(double value) implements Expression {
     public double evaluateAt(double x) {
       return value;
     }
 
     public String toSexp() {
       if (value % 1 == 0) {
-        return String.valueOf((long)value);
+        return String.valueOf((long) value);
       } else {
         return String.valueOf(value);
       }
     }
   }
 
-  public record Variable(String name) implements Expression {
+  public static record Variable(String name) implements Expression {
     public double evaluateAt(double x) {
       switch (name.toLowerCase()) {
-      case "x":
-        return x;
-      case "pi":
-      case "π":
-        return Math.PI;
-      case "tau":
-      case "𝜏":
-        return Math.TAU;
-      case "e":
-        return Math.E;
-      default:
-        throw new RuntimeException("No binding for " + name);
+        case "x":
+          return x;
+        case "pi":
+        case "π":
+          return Math.PI;
+        case "tau":
+        case "𝜏":
+          return Math.TAU;
+        case "e":
+          return Math.E;
+        default:
+          throw new RuntimeException("No binding for " + name);
       }
     }
 
@@ -113,7 +115,12 @@ public class Parser {
     }
   }
 
-  public record UnaryFunction(String name, DoubleFunction<Double> fn, Expression arg) implements Expression {
+  public static record UnaryFunction(
+    String name,
+    DoubleFunction<Double> fn,
+    Expression arg
+  )
+    implements Expression {
     public double evaluateAt(double x) {
       return fn.apply(arg.evaluateAt(x));
     }
@@ -123,7 +130,8 @@ public class Parser {
     }
   }
 
-  public record Addition(Expression left, Expression right) implements Expression {
+  public static record Addition(Expression left, Expression right)
+    implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) + right.evaluateAt(x);
     }
@@ -131,10 +139,10 @@ public class Parser {
     public String toSexp() {
       return sexp("+", left, right);
     }
-
   }
 
-  public record Subtraction(Expression left, Expression right) implements Expression {
+  public static record Subtraction(Expression left, Expression right)
+    implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) - right.evaluateAt(x);
     }
@@ -143,7 +151,9 @@ public class Parser {
       return sexp("-", left, right);
     }
   }
-  public record Multiplication(Expression left, Expression right) implements Expression {
+
+  public static record Multiplication(Expression left, Expression right)
+    implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) * right.evaluateAt(x);
     }
@@ -152,7 +162,9 @@ public class Parser {
       return sexp("*", left, right);
     }
   }
-  public record Division(Expression left, Expression right) implements Expression {
+
+  public static record Division(Expression left, Expression right)
+    implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) / right.evaluateAt(x);
     }
@@ -160,9 +172,10 @@ public class Parser {
     public String toSexp() {
       return sexp("/", left, right);
     }
-
   }
-  public record Remainder(Expression left, Expression right) implements Expression {
+
+  public static record Remainder(Expression left, Expression right)
+    implements Expression {
     public double evaluateAt(double x) {
       return left.evaluateAt(x) % right.evaluateAt(x);
     }
@@ -171,7 +184,9 @@ public class Parser {
       return sexp("%", left, right);
     }
   }
-  public record Exponentiation(Expression left, Expression right) implements Expression {
+
+  public static record Exponentiation(Expression left, Expression right)
+    implements Expression {
     public double evaluateAt(double x) {
       return Math.pow(left.evaluateAt(x), right.evaluateAt(x));
     }
@@ -185,8 +200,8 @@ public class Parser {
   // Parsing
 
   private record PartialParse(Expression expression, int position) {}
-  private record Token(String text, int position) {}
 
+  private record Token(String text, int position) {}
 
   public Optional<Expression> parse(String s) {
     var pp = expression(s, 0);
@@ -236,7 +251,10 @@ public class Parser {
     if (pp != null) {
       var bang = match(s, pp.position(), "!");
       if (bang != null) {
-        return ok(new UnaryFunction("!", this::factorial, pp.expression()), bang.position());
+        return ok(
+          new UnaryFunction("!", this::factorial, pp.expression()),
+          bang.position()
+        );
       } else {
         return pp;
       }
@@ -267,7 +285,14 @@ public class Parser {
     if (n != null) {
       var arg = parenthesized(s, n.position());
       if (arg != null) {
-        return ok(new UnaryFunction(n.text(), functions.get(n.text()), arg.expression()), arg.position());
+        return ok(
+          new UnaryFunction(
+            n.text(),
+            functions.get(n.text()),
+            arg.expression()
+          ),
+          arg.position()
+        );
       }
     }
     return null;
@@ -322,10 +347,16 @@ public class Parser {
         var right = expression(s, op.position());
         if (right != null) {
           switch (op.text()) {
-          case "+":
-            return ok(new Addition(left.expression(), right.expression()), right.position());
-          case "-":
-            return ok(new Subtraction(left.expression(), right.expression()), right.position());
+            case "+":
+              return ok(
+                new Addition(left.expression(), right.expression()),
+                right.position()
+              );
+            case "-":
+              return ok(
+                new Subtraction(left.expression(), right.expression()),
+                right.position()
+              );
           }
         }
       }
@@ -341,12 +372,21 @@ public class Parser {
         var right = term(s, op.position());
         if (right != null) {
           switch (op.text()) {
-          case "*":
-            return ok(new Multiplication(left.expression(), right.expression()), right.position());
-          case "/":
-            return ok(new Division(left.expression(), right.expression()), right.position());
-          case "%":
-            return ok(new Remainder(left.expression(), right.expression()), right.position());
+            case "*":
+              return ok(
+                new Multiplication(left.expression(), right.expression()),
+                right.position()
+              );
+            case "/":
+              return ok(
+                new Division(left.expression(), right.expression()),
+                right.position()
+              );
+            case "%":
+              return ok(
+                new Remainder(left.expression(), right.expression()),
+                right.position()
+              );
           }
         }
       }
@@ -361,7 +401,10 @@ public class Parser {
       if (op != null) {
         var exp = factor(s, op.position());
         if (exp != null) {
-          return ok(new Exponentiation(base.expression(), exp.expression()), exp.position());
+          return ok(
+            new Exponentiation(base.expression(), exp.expression()),
+            exp.position()
+          );
         }
       }
     }
@@ -370,7 +413,7 @@ public class Parser {
 
   private Token match(String s, int pos, String... whats) {
     var newPos = ws(s, pos);
-    for (var what: whats) {
+    for (var what : whats) {
       if (lookingAt(s, newPos, what)) {
         var end = newPos + what.length();
         return new Token(s.substring(newPos, end), ws(s, end));
@@ -383,10 +426,9 @@ public class Parser {
     return pos < s.length() && s.indexOf(what, pos) == pos;
   }
 
-
   private Token name(String s, int pos) {
     int start = ws(s, pos);
-    while (pos < s.length() && Character.isLetter(s.codePointAt(pos))){
+    while (pos < s.length() && Character.isLetter(s.codePointAt(pos))) {
       pos += Character.charCount(s.codePointAt(pos));
     }
     if (pos > start) {
@@ -398,11 +440,9 @@ public class Parser {
   // Eat whitespace and return the new position. Used in match to allow
   // whitespace around punctuation.
   private int ws(String s, int pos) {
-    while (pos < s.length() && Character.isWhitespace(s.codePointAt(pos))){
+    while (pos < s.length() && Character.isWhitespace(s.codePointAt(pos))) {
       pos += Character.charCount(s.codePointAt(pos));
     }
     return pos;
   }
-
-
 }
